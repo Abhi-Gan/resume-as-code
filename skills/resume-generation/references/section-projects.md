@@ -1,5 +1,7 @@
 Using the session context (candidate info, job analysis, company business analysis, timeline events), generate projects section.
 
+Note: combining the project name with its tagline into one line, and folding the tech stack into the first bullet, are **rendering** decisions, not content decisions — the app does this automatically per template from the `description`/`keywords` fields below. Populate those fields the same way regardless of `template`; do not pre-compose a combined string yourself.
+
 Important requirements:
 
 - **Language**:

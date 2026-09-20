@@ -5,23 +5,13 @@ import type { ResumeDocument, Section } from '../schema'
 import {
   DEFAULT_PAPER_SIZE,
   PAPER_SIZE_IDS,
+  DEFAULT_TEMPLATE_ID,
+  TEMPLATE_IDS,
   type RenderModel,
   type RenderSection,
   type PaperSizeId,
+  type TemplateId,
 } from '../models'
-
-function getFontFamily(doc: ResumeDocument, langOverride?: string): string {
-  const lang = langOverride ?? doc.document.language
-  if (
-    lang === 'zh-hans' ||
-    lang === 'zh-hant-hk' ||
-    lang === 'zh-hant-tw' ||
-    lang === 'zh'
-  ) {
-    return "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif"
-  }
-  return "'Inter', system-ui, -apple-system, sans-serif"
-}
 
 function getDefaultSectionTitle(section: Section, lang: string): string {
   const isZH = lang.startsWith('zh')
@@ -53,13 +43,15 @@ function compileSection(section: Section, lang: string): RenderSection | null {
         id: section.id,
         title,
         variant: 'entries',
-        gap: 9,
+        kind: 'work',
         entries: section.items
           .filter((item) => item.visible !== false)
           .map((item, i) => ({
+            kind: 'work',
             id: item.id ?? `work-${i}`,
             title: item.name,
-            subtitle: item.position,
+            position: item.position,
+            location: item.location,
             startDate: item.startDate,
             endDate: item.endDate,
             bullets: item.summary ?? [],
@@ -72,17 +64,19 @@ function compileSection(section: Section, lang: string): RenderSection | null {
         id: section.id,
         title,
         variant: 'entries',
-        gap: 6,
+        kind: 'education',
         entries: section.items
           .filter((item) => item.visible !== false)
           .map((item, i) => ({
+            kind: 'education',
             id: item.id ?? `edu-${i}`,
             title: item.institution,
-            subtitle: `${item.degree} · ${item.area}`,
+            degree: item.degree,
+            area: item.area,
+            gpa: item.gpa,
             startDate: item.startDate,
             endDate: item.endDate,
             bullets: item.summary ?? [],
-            keywords: [],
           })),
       }
 
@@ -91,13 +85,14 @@ function compileSection(section: Section, lang: string): RenderSection | null {
         id: section.id,
         title,
         variant: 'entries',
-        gap: 9,
+        kind: 'project',
         entries: section.items
           .filter((item) => item.visible !== false)
           .map((item, i) => ({
+            kind: 'project',
             id: item.id ?? `proj-${i}`,
             title: item.name,
-            subtitle: item.description ?? '',
+            description: item.description,
             startDate: item.startDate,
             endDate: item.endDate,
             bullets: item.summary ?? [],
@@ -250,16 +245,24 @@ export function compileNewSchema(
     ? (rawPaperSize as PaperSizeId)
     : DEFAULT_PAPER_SIZE
 
+  const rawTemplateId = doc.layout?.template
+  const templateId: TemplateId = TEMPLATE_IDS.includes(
+    rawTemplateId as TemplateId,
+  )
+    ? (rawTemplateId as TemplateId)
+    : DEFAULT_TEMPLATE_ID
+
   return {
     lang,
     documentTitle: doc.document.title?.trim() || undefined,
-    fontFamily: getFontFamily(doc, lang),
     paperSize,
+    templateId,
     header: {
       name: basics.name,
       headline: basics.headline ?? '',
       contactLine1: contactParts1.join(' · '),
       contactLine2: '',
+      location: basics.location ?? '',
       summary: parseSummary(basics.summary),
       socialLinks,
     },

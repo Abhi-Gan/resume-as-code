@@ -1,5 +1,14 @@
 Using the session context (candidate info, job analysis, company business analysis, timeline events), generate work experience.
 
+### Tech-Compact template overrides
+
+Everything in this document applies as-is for `template = jake`. When `template = techCompact`, this override applies on top:
+
+- **One-page hard cap beats completeness.** The "Completeness" rule below (include ALL roles) is a `jake` default, not an absolute rule. For `techCompact`, the one-page hard cap (see `references/overview.md`) takes priority: it is acceptable, and often necessary, to omit older or low-relevance roles entirely rather than only compressing them. Keep the roles most relevant to the JD; cut the rest.
+- **Experience/Research split**: if the candidate has both industry roles and academic/research roles, this document's output still produces one flat `work` list — the split into two separately-titled sections happens at assembly time (see `SKILL.md` step 6), not here. Just generate all selected roles normally; note in your output which are industry vs. research so assembly can group them.
+
+Note: combining company/location/position into one line and folding the tech stack into the first bullet are **rendering** decisions, not content decisions — the app does this automatically per template from the `location`/`position`/`keywords` fields below. Populate those fields the same way regardless of template; do not pre-compose a combined string yourself.
+
 Important requirements:
 
 - **Language**:
@@ -44,6 +53,7 @@ Output format:
   - `name`: Company Name. If source `company/institution` is stored as `English | 中文`, choose the side matching the target language. If only one official name is available, preserve it as-is. Do **NOT** output both languages in a monolingual resume.
   - `url`: Company URL (optional, omit or leave empty if unknown. DO NOT use empty string `""`)
   - `position`: Job Title
+  - `location`: City, State/Region (optional, omit if not present in the timeline entry). Populate this regardless of template — Jake doesn't display it, Tech-Compact does.
   - `startDate`: Start Date (MMM YYYY or YYYY-MM-DD)
   - `endDate`: End Date (MMM YYYY or YYYY-MM-DD). **For current roles, leave this field empty (null) or omit it. DO NOT use the string "Present" or empty string `""`.**
   - `summary`: Achievements as a multiline string using `|`, formatted as bullet points. The bullet count and detail density MUST follow the recency rules above: most recent role most detailed, second role moderately detailed, older roles concise. The bullets MUST synthesize relevant signals from all associated projects without degenerating into an exhaustive project list.

@@ -31,6 +31,7 @@ Before starting the pipeline, present the user with these options:
 1. **Auto review + revise** — should the pipeline automatically review and revise the resume after De-AI? (default: `yes`)
 2. **Revision rounds** — how many review-revise cycles to run? (default: `1`, options: `1` / `2` / `3`)
 3. **yamlresume compatibility** — should the final output pass `pnpm yamlresume validate`? (default: `no`)
+4. **Template** — which visual template should this resume use? (default: `jake`, options: `jake` / `techCompact`)
 
 Present as a single prompt:
 
@@ -39,8 +40,11 @@ Present as a single prompt:
 > 1. Auto review & revise after generation? [Y/n]
 > 2. Review-revise rounds? [1/2/3] (default: 1)
 > 3. yamlresume format compatibility? [y/N] (default: no)
+> 4. Template? [jake/techCompact] (default: jake)
 
-If the user does not respond, use defaults (`yes`, `1`, `no`). Store the answers in the run context for steps 5 and 10.
+If the user does not respond, use defaults (`yes`, `1`, `no`, `jake`). Store the answers in the run context for steps 5, 6, and 10.
+
+**Template compatibility note**: `techCompact` is only supported in New Schema v1.0 format (the resume-builder-app's own React/Puppeteer renderer). If the user chose `yamlresume compatible = yes` (Legacy format) **and** `techCompact`, tell them Tech-Compact isn't representable in the Legacy/LaTeX pipeline and confirm whether to switch to New Schema or fall back to `jake`. Do not silently ignore the conflict.
 
 **Format routing:**
 
@@ -87,19 +91,19 @@ Pass Job Analysis (including `language`), Company Business Analysis, and the mat
 
 1. **Projects** — see [references/section-projects.md](references/section-projects.md). At most **two** highlighted projects. Save as `section-projects.yml`.
 2. **Work Experience** — see [references/section-work.md](references/section-work.md). Save as `section-work.yml`.
-3. **Skills** — see [references/section-skills.md](references/section-skills.md). Save as `section-skills.yml`.
-4. **Personal Summary** — see [references/section-personal-summary.md](references/section-personal-summary.md). **Crucial**: also pass the generated `section-projects.yml`, `section-work.yml`, and `section-skills.yml` so the summary reflects the tailored resume. Save as `section-personal-summary.yml`.
+3. **Skills** — see [references/section-skills.md](references/section-skills.md). Save as `section-skills.yml`. **Skip this step entirely when `template = techCompact`** — this template has no standalone Skills section; the same keyword signal is folded into each Work/Project entry's first bullet instead (see section-work.md / section-projects.md's Tech-Compact rules).
+4. **Personal Summary** — see [references/section-personal-summary.md](references/section-personal-summary.md). **Crucial**: also pass the generated `section-projects.yml`, `section-work.yml`, and `section-skills.yml` so the summary reflects the tailored resume. Save as `section-personal-summary.yml`. **Skip this step entirely when `template = techCompact`** — this template has no personal summary section at all.
 
-Detailed length budgets, ATS rules, supported Markdown subset, and authenticity rules live in [references/overview.md](references/overview.md). Read it before generating sections.
+Detailed length budgets, ATS rules, supported Markdown subset, and authenticity rules live in [references/overview.md](references/overview.md). Read it before generating sections — it also has a **Template-Specific Rules** section covering `techCompact`'s one-page hard cap and bullet conventions.
 
 ### 6. Assemble the final resume
 
 Merge into one YAML file. Use the structural template matching your chosen format — do not copy its content. Sources:
 
-- `data/profiles/basics.yml` (basics — merge the generated summary into `basics.summary`)
-- `data/profiles/education.yml`
+- `data/profiles/basics.yml` (basics — merge the generated summary into `basics.summary`, unless `template = techCompact`, in which case leave `basics.summary` empty/omitted since step 5 skipped generating one)
+- `data/profiles/education.yml` — if an entry has a distinct `gpa` field, pass it through as `gpa` on the assembled education item (New Schema only; Legacy has no `gpa` field). This is what lets Tech-Compact render it on its own row — the app ignores `gpa` for `jake`. If the source only has GPA embedded in `summary` prose (older profile data), leave it as-is; this isn't a required migration.
 - `data/profiles/certificates.yml`
-- `data/.cache/<Timestamp>/section-{personal-summary,skills,work,projects}.yml`
+- `data/.cache/<Timestamp>/section-{personal-summary,skills,work,projects}.yml` — for `template = techCompact`, `section-personal-summary.yml` and `section-skills.yml` won't exist (step 5 skipped them); only merge `section-work.yml` and `section-projects.yml`.
 
 **Profiles (social links)**: always include `profiles` from `data/profiles/basics.yml` if present (e.g. GitHub, LinkedIn). This is mandatory for both formats.
 
@@ -123,6 +127,8 @@ basics → education → work → skills → certificates → projects
 - Markdown engine: defaults.
 - HTML engine: `template: jake`, font size in `px` from `14px` to `20px` (default `16px`).
 
+**Template note**: the Legacy/LaTeX pipeline only supports `jake`. If the startup answer was `techCompact`, this should not happen (see the compatibility note under Review & Revision Options) — if it does, fall back to `jake` here and flag it in your final report.
+
 **Profiles placement**: `profiles` appears under `content` as a sibling of `basics` (or inside `content.basics.profiles`).
 
 #### New Schema path (yamlresume compatible = no)
@@ -135,8 +141,15 @@ Use [assets/resume-new-schema.example.yml](assets/resume-new-schema.example.yml)
 - `document.title`: `"{JobTitle} – {Company}"`
 - `document.language`: from Job Analysis `language` field. Supported: `en`, `zh-hans`, `zh-hant-hk`, `zh-hant-tw`, `es`, `fr`, `no`.
 - `basics`: name, headline, phone, email, url, summary (as `string[]`), profiles
-- `order`: `["education", "work", "skills", "certificates", "projects"]`
+- `order`: `["education", "work", "skills", "certificates", "projects"]` — for `template = techCompact`, drop `"skills"` from this list (no standalone Skills section exists for this template).
 - `sections`: array of discriminated section objects, each with `id`, `type`, `items`
+
+**Template-aware `layout` block** (New Schema only):
+
+- `template = jake` (default): omit the `layout` block entirely, or write `layout: { template: jake }` — both are equivalent, since `jake`/`a4` are the app's own defaults.
+- `template = techCompact`: write `layout: { template: techCompact, page: { size: letter } }`. Tech-Compact always uses US Letter paper — this is not a separate question, it's implied by the template choice.
+
+**Experience/Research split** (New Schema only, `template = techCompact`): if the candidate's matched work entries include both industry roles and academic/research roles, split them into two separately-titled `work`-type sections instead of one — e.g. `{ id: work, type: work, title: Experience, items: [...] }` and `{ id: research, type: work, title: Research, items: [...] }`, both listed in `order` adjacent to each other. This is valid today because sections are keyed by `id`, not `type` — two sections can share `type: work`. This split is optional for `jake`.
 
 **Profiles placement**: `profiles` appears under `basics.profiles`.
 

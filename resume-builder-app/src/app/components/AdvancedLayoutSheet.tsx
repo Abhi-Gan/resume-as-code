@@ -16,7 +16,11 @@ import {
   type LayoutPresetId,
 } from '../layout/layout-options'
 import { PAPER_SIZES, type PaperSizeId } from '../renderer/constants'
-import { PAPER_SIZE_IDS } from '../../models'
+import {
+  PAPER_SIZE_IDS,
+  TEMPLATE_IDS,
+  type TemplateId,
+} from '../../models'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import {
@@ -86,6 +90,11 @@ const PRESET_LABELS: Record<Exclude<LayoutPresetId, 'custom'>, string> = {
 const PAPER_SIZE_LABELS: Record<PaperSizeId, string> = {
   a4: 'A4',
   letter: 'US Letter',
+}
+
+const TEMPLATE_LABELS: Record<TemplateId, string> = {
+  jake: 'Jake',
+  techCompact: 'Tech-Compact',
 }
 
 function MarginPreview({
@@ -327,6 +336,32 @@ export function AdvancedLayoutSheet({
             {PAPER_SIZE_IDS.map((id) => (
               <ToggleGroupItem key={id} value={id} className="h-8 text-xs">
                 {PAPER_SIZE_LABELS[id]}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+
+        <div className="border-b border-border px-6 py-4">
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+            Template
+          </p>
+          <ToggleGroup
+            type="single"
+            value={layout.templateId}
+            onValueChange={(value) => {
+              if (!value) return
+              onChange({ ...layout, templateId: value as TemplateId })
+            }}
+            variant="outline"
+            size="sm"
+            className="grid w-full"
+            style={{
+              gridTemplateColumns: `repeat(${TEMPLATE_IDS.length}, minmax(0, 1fr))`,
+            }}
+          >
+            {TEMPLATE_IDS.map((id) => (
+              <ToggleGroupItem key={id} value={id} className="h-8 text-xs">
+                {TEMPLATE_LABELS[id]}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>

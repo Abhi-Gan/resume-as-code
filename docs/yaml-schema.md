@@ -117,7 +117,7 @@ order:
   - langAndInterests
 
 layout:
-  template: jake
+  template: jake # jake | techCompact — visual template for the app's own preview/PDF export. Optional, defaults to jake.
   page:
     size: a4 # a4 | letter 
     margins: { top: 1.5cm, left: 1.5cm, right: 1.5cm, bottom: 1.5cm }
@@ -132,6 +132,8 @@ themeOverrides:
 ```
 
 **`layout.page.size`**: controls the physical paper size used by the resume-builder-app's own React preview and Puppeteer PDF export (not the Legacy/LaTeX engine, which has no paper-size concept). Valid values are `a4` (default) and `letter` (US Letter, 8.5in x 11in). This field is optional — omitting it (or the whole `layout` block) is equivalent to `a4`. Toggling paper size live in the app's Advanced Layout panel does not write back into the YAML; this field only sets the *initial* default when a resume is loaded.
+
+**`layout.template`**: controls the visual template used by the resume-builder-app's own React preview and Puppeteer PDF export (not the Legacy/LaTeX engine, which only supports `jake`). Valid values are `jake` (default — left-aligned name, right-aligned contact, separate Skills section, personal summary) and `techCompact` (centered name/contact header, no personal summary, no standalone Skills section — skills are folded into each Work/Project entry's keywords instead, one-page-oriented). This field is optional — omitting it (or the whole `layout` block) is equivalent to `jake`. As with paper size, toggling the template live in the app's Advanced Layout panel does not write back into the YAML; this field only sets the _initial_ default when a resume is loaded.
 
 ---
 

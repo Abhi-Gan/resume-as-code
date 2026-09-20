@@ -1,4 +1,4 @@
-import type { PaperSizeId } from '../models'
+import type { PaperSizeId, TemplateId } from '../models'
 
 /**
  * Resume Schema v1 — the new versioned YAML specification owned by resume-builder-app.
@@ -39,6 +39,7 @@ export interface Basics {
   phone?: string
   email?: string
   url?: string
+  location?: string
   summary?: string[] | string
   profiles?: Profile[]
 }
@@ -50,6 +51,7 @@ export interface WorkItem {
   visible?: boolean
   name: string
   position: string
+  location?: string
   startDate: string
   endDate?: string
   summary?: string[]
@@ -64,6 +66,7 @@ export interface EducationItem {
   institution: string
   degree: string
   area: string
+  gpa?: string
   startDate: string
   endDate?: string
   summary?: string[]
@@ -192,7 +195,7 @@ export type Section =
 // ── Layout ──────────────────────────────────────────────────────────────────
 
 export interface LayoutConfig {
-  template?: string
+  template?: TemplateId
   page?: {
     /** Physical paper size for the app's own React/Puppeteer rendering path. */
     size?: PaperSizeId

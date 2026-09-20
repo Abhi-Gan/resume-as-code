@@ -299,14 +299,18 @@ export default function App() {
     [langOverride],
   )
 
-  // Initial compile. Seed paperSize from the loaded YAML's layout.page.size
-  // (if present) as a one-time default — later edits to layoutOptions via the
-  // Advanced Layout panel are session-only and are not re-seeded on every
-  // keystroke recompile.
+  // Initial compile. Seed paperSize/templateId from the loaded YAML's
+  // layout.page.size / layout.template (if present) as a one-time default —
+  // later edits to layoutOptions via the Advanced Layout panel are
+  // session-only and are not re-seeded on every keystroke recompile.
   useEffect(() => {
     const model = compile(yamlSource)
     if (model) {
-      setLayoutOptions((prev) => ({ ...prev, paperSize: model.paperSize }))
+      setLayoutOptions((prev) => ({
+        ...prev,
+        paperSize: model.paperSize,
+        templateId: model.templateId,
+      }))
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ResumeRenderer } from '../renderer'
+import { resolveFontFamily } from '../renderer/font-family'
 import type { RenderModel } from '../../models'
 import {
   layoutFromLegacyOptions,
@@ -65,7 +66,12 @@ export function PrintRoute() {
     if (!payload) return
     console.log('[PrintRoute] Model set, waiting for fonts + layout...')
 
-    const family = payload.model.fontFamily
+    // Recompute live (not payload.model.fontFamily) so the exported PDF's
+    // preloaded font matches what ResumeRendererBody will actually render,
+    // even if the export request's layout.templateId overrides the model's
+    // compiled default.
+    const layout = layoutFromLegacyOptions(payload.options)
+    const family = resolveFontFamily(payload.model.lang, layout.templateId)
     const weights = [400, 500, 600, 700]
 
     Promise.all(

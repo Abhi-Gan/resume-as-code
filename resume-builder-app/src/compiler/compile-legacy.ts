@@ -4,6 +4,7 @@
  */
 import {
   DEFAULT_PAPER_SIZE,
+  DEFAULT_TEMPLATE_ID,
   type RenderModel,
   type RenderSection,
 } from '../models'
@@ -119,10 +120,6 @@ export function compileLegacy(
   const order = layoutSections?.order
   const aliases = layoutSections?.aliases ?? {}
 
-  const fontFamily = isZH
-    ? "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif"
-    : "'Inter', system-ui, -apple-system, sans-serif"
-
   const contactParts1: string[] = []
   if (basics.phone) contactParts1.push(basics.phone)
   if (basics.email) contactParts1.push(basics.email)
@@ -158,11 +155,12 @@ export function compileLegacy(
       id: 'work',
       title: title('work', '工作经历', 'Experience'),
       variant: 'entries',
-      gap: 9,
+      kind: 'work',
       entries: content.work.map((job, i) => ({
+        kind: 'work',
         id: `work-${i}`,
         title: job.name,
-        subtitle: job.position,
+        position: job.position,
         startDate: job.startDate,
         endDate: job.endDate,
         bullets: parseSummaryBullets(job.summary),
@@ -177,15 +175,16 @@ export function compileLegacy(
       id: 'education',
       title: title('education', '教育背景', 'Education'),
       variant: 'entries',
-      gap: 6,
+      kind: 'education',
       entries: content.education.map((edu, i) => ({
+        kind: 'education',
         id: `edu-${i}`,
         title: edu.institution,
-        subtitle: `${edu.degree} · ${edu.area}`,
+        degree: edu.degree,
+        area: edu.area,
         startDate: edu.startDate,
         endDate: edu.endDate,
         bullets: parseSummaryBullets(edu.summary),
-        keywords: [],
       })),
     })
   }
@@ -196,11 +195,12 @@ export function compileLegacy(
       id: 'projects',
       title: title('projects', '项目经历', 'Projects'),
       variant: 'entries',
-      gap: 9,
+      kind: 'project',
       entries: content.projects.map((proj, i) => ({
+        kind: 'project',
         id: `proj-${i}`,
         title: proj.name,
-        subtitle: proj.description ?? '',
+        description: proj.description,
         startDate: proj.startDate,
         endDate: proj.endDate,
         bullets: parseSummaryBullets(proj.summary),
@@ -259,13 +259,14 @@ export function compileLegacy(
 
   return {
     lang,
-    fontFamily,
     paperSize: DEFAULT_PAPER_SIZE,
+    templateId: DEFAULT_TEMPLATE_ID,
     header: {
       name: basics.name,
       headline: '',
       contactLine1: contactParts1.join(' · '),
       contactLine2: '',
+      location: '',
       summary: parseSummaryBullets(basics.summary),
       socialLinks,
     },
