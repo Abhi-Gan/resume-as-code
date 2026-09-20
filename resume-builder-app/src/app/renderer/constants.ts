@@ -1,8 +1,29 @@
 import type { PaperFormat } from 'puppeteer'
-import { DEFAULT_PAPER_SIZE, type PaperSizeId } from '../../models/render-model'
+import {
+  DEFAULT_PAPER_SIZE,
+  type PaperSizeId,
+  type TemplateId,
+} from '../../models/render-model'
+
+/**
+ * Structural shape for a color palette — widened to `string` rather than
+ * derived via `as const`, so sibling palettes (Jake, Tech-Compact) can each
+ * specify their own hex values without TypeScript demanding they match the
+ * first palette's exact literal strings.
+ */
+export interface ColorPalette {
+  name: string
+  sectionHead: string
+  entry: string
+  body: string
+  meta: string
+  subtle: string
+  rule: string
+  ruleLight: string
+}
 
 /** Design tokens frozen from the Figma Make template baseline. */
-export const Colors = {
+export const Colors: ColorPalette = {
   name: '#000000',
   sectionHead: '#000000',
   entry: '#111111',
@@ -11,7 +32,32 @@ export const Colors = {
   subtle: '#999999',
   rule: '#000000',
   ruleLight: '#CCCCCC',
-} as const
+}
+
+/**
+ * Tech-Compact uses all-black text throughout (no gray hierarchy) to match
+ * the reference template. Divider lines (rule/ruleLight) are decorative,
+ * not text, so they're shared with the default palette unchanged.
+ */
+export const TECH_COMPACT_COLORS: ColorPalette = {
+  name: '#000000',
+  sectionHead: '#000000',
+  entry: '#000000',
+  body: '#000000',
+  meta: '#000000',
+  subtle: '#000000',
+  rule: Colors.rule,
+  ruleLight: Colors.ruleLight,
+}
+
+/**
+ * Per-template color registry: adding a template means adding one entry
+ * here — Record<TemplateId, V> forces every id to be accounted for.
+ */
+export const TEMPLATE_COLORS: Record<TemplateId, ColorPalette> = {
+  jake: Colors,
+  techCompact: TECH_COMPACT_COLORS,
+}
 
 export type { PaperSizeId }
 export { DEFAULT_PAPER_SIZE }

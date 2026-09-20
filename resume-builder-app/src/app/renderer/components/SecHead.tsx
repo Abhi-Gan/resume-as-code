@@ -1,9 +1,9 @@
-import { Colors } from '../constants'
 import { useLayoutTokensContext } from '../../layout/LayoutOptionsContext'
 
 /** Full-width section divider with label. */
 export function SecHead({ title }: { title: string }) {
-  const { font, lineHeight, spacing } = useLayoutTokensContext()
+  const { font, lineHeight, spacing, colors, letterSpacing } =
+    useLayoutTokensContext()
 
   return (
     <div
@@ -14,9 +14,9 @@ export function SecHead({ title }: { title: string }) {
         style={{
           fontSize: font.sectionHead,
           fontWeight: 700,
-          letterSpacing: '0.22em',
+          letterSpacing: letterSpacing.sectionHead,
           textTransform: 'uppercase',
-          color: Colors.sectionHead,
+          color: colors.sectionHead,
           lineHeight: lineHeight.sectionHead,
         }}
       >
@@ -25,7 +25,7 @@ export function SecHead({ title }: { title: string }) {
       <div
         style={{
           height: 1,
-          backgroundColor: Colors.rule,
+          backgroundColor: colors.rule,
           marginTop: spacing.secHeadRuleMarginTop,
         }}
       />

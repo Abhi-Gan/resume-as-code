@@ -100,6 +100,17 @@ The output content (specifically `summary` fields) supports a **limited set of M
   - Horizontal Rules (`---`)
   - Tables
 
+### Template-Specific Rules
+
+These apply on top of everything above, based on the `template` chosen at startup (`jake` or `techCompact`). Default (`jake`) behavior is everything already described in this document — nothing changes for it. The rules below are `techCompact`-only overrides.
+
+- **One page is a hard cap, not a soft target.** The "keep it within two pages whenever possible" language elsewhere in this document does not apply — `techCompact` must fit on exactly one US Letter page. If content doesn't fit, cut roles or bullets; do not let it flow to a second page.
+- **No Personal Summary section exists.** Do not generate one (see `references/section-personal-summary.md`).
+- **No standalone Skills section exists.** The app automatically folds each Work/Project entry's `keywords` into an italicized first bullet instead of rendering a separate Skills section — this is a rendering decision, not something you need to write differently. Just populate `keywords` normally, same as `jake`.
+- **Denser inline bold emphasis.** Bold key nouns and metrics more aggressively than the `jake` default — technical deliverables, scope numbers, and outcome metrics should be bolded throughout each bullet, not just the single headline metric. For example: "Built and optimized **automated E2E QA systems** for compliance-critical workflows, reducing test execution time from minutes to seconds (**60x speedup**)." This is still governed by the same Markdown subset above (`**bold**` only) — just used more densely.
+
+Note: combining company/location/position (or project name/tagline) into one title line is also a rendering decision the app makes automatically from the `location`/`position`/`description` fields — see `references/section-work.md` / `references/section-projects.md`. Don't pre-compose these yourself for any template.
+
 ### Target Platform Context
 
 The generated content will be compiled by `yamlresume`.

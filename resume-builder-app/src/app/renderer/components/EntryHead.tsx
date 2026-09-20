@@ -1,4 +1,3 @@
-import { Colors } from '../constants'
 import { formatDate } from '../format-date'
 import { useLayoutTokensContext } from '../../layout/LayoutOptionsContext'
 
@@ -12,7 +11,7 @@ export interface EntryHeadProps {
 
 /** Compact header row: bold left label + right date, then italic subtitle. */
 export function EntryHead({ title, sub, start, end, lang }: EntryHeadProps) {
-  const { font, lineHeight, spacing } = useLayoutTokensContext()
+  const { font, lineHeight, spacing, colors } = useLayoutTokensContext()
   const displayStart = lang ? formatDate(start, lang) : start
   const displayEnd = lang && end ? formatDate(end, lang) : end
 
@@ -30,7 +29,7 @@ export function EntryHead({ title, sub, start, end, lang }: EntryHeadProps) {
           style={{
             fontSize: font.entryTitle,
             fontWeight: 600,
-            color: Colors.entry,
+            color: colors.entry,
             lineHeight: lineHeight.entry,
           }}
         >
@@ -39,7 +38,7 @@ export function EntryHead({ title, sub, start, end, lang }: EntryHeadProps) {
         <span
           style={{
             fontSize: font.entryDate,
-            color: Colors.subtle,
+            color: colors.subtle,
             whiteSpace: 'nowrap',
             flexShrink: 0,
             lineHeight: lineHeight.entry,
@@ -49,17 +48,19 @@ export function EntryHead({ title, sub, start, end, lang }: EntryHeadProps) {
           {displayEnd ? ` – ${displayEnd}` : ''}
         </span>
       </div>
-      <p
-        style={{
-          fontSize: font.entrySub,
-          color: Colors.meta,
-          fontStyle: 'italic',
-          marginTop: spacing.entrySubMarginTop,
-          lineHeight: lineHeight.entry,
-        }}
-      >
-        {sub}
-      </p>
+      {sub && (
+        <p
+          style={{
+            fontSize: font.entrySub,
+            color: colors.meta,
+            fontStyle: 'italic',
+            marginTop: spacing.entrySubMarginTop,
+            lineHeight: lineHeight.entry,
+          }}
+        >
+          {sub}
+        </p>
+      )}
     </div>
   )
 }

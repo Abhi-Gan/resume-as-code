@@ -1,13 +1,15 @@
-import type { RenderModel, RenderSection } from '../../models/render-model'
-import { Colors, SectionSpacing } from './constants'
-import { SecHead, EntryHead, Bullets, Keywords } from './components'
+import type {
+  RenderModel,
+  RenderSection,
+  RenderEntry,
+} from '../../models/render-model'
+import { SectionSpacing } from './constants'
+import { resolveFontFamily } from './font-family'
+import { SecHead, EntryHead, Bullets } from './components'
 import { PrintStyles } from './PrintStyles'
 import { PaginatedPaper } from './PaginatedPaper'
-import { inlineMdProps } from './inline-md'
 import { formatDate } from './format-date'
-import { resolveSocialIcon, type IconifyIconData } from './social-icon-map'
-import { useState, useEffect } from 'react'
-import { Icon } from '@iconify-icon/react'
+import { TEMPLATES, type TemplateDefinition } from './templates'
 import type { ReactNode } from 'react'
 import {
   DEFAULT_LAYOUT_OPTIONS,
@@ -15,25 +17,6 @@ import {
 } from '../layout/layout-options'
 import { LayoutOptionsProvider } from '../layout/LayoutOptionsContext'
 import { useLayoutTokensContext } from '../layout/LayoutOptionsContext'
-
-/** Lazily loads a Font Awesome Brands icon by network name and renders it inline. */
-function SocialIcon({ network }: { network: string }) {
-  const [icon, setIcon] = useState<IconifyIconData | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    resolveSocialIcon(network).then((mod) => {
-      if (!cancelled && mod) setIcon(mod)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [network])
-
-  if (!icon) return null
-
-  return <Icon icon={icon} style={{ width: 10, height: 10, flexShrink: 0 }} />
-}
 
 interface ResumeRendererProps {
   model: RenderModel
@@ -76,117 +59,35 @@ function ResumeRendererBody({
   model: RenderModel
   showSocialIcons: boolean
 }) {
-  const { header, sections, fontFamily, lang } = model
+  const { header, sections, lang } = model
   const tokens = useLayoutTokensContext()
-  const { sectionGap, font, lineHeight, spacing, options } = tokens
+  const { sectionGap, options } = tokens
+  // Recomputed live (not model.fontFamily) so the Advanced Layout panel's
+  // Template toggle updates the font immediately, not just on next load.
+  const fontFamily = resolveFontFamily(lang, options.templateId)
   const blocks: ReactNode[] = []
 
+  const Header = TEMPLATES[options.templateId].Header
   blocks.push(
-    <header key="header" className="paginate-block" style={{ marginBottom: 0 }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: 16,
-        }}
-      >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p
-            style={{
-              fontSize: font.name,
-              fontWeight: 700,
-              color: Colors.name,
-              letterSpacing: '-0.01em',
-              lineHeight: lineHeight.name,
-            }}
-          >
-            {header.name}
-          </p>
-          <p
-            style={{
-              fontSize: font.headline,
-              color: Colors.meta,
-              marginTop: spacing.headlineMarginTop,
-              lineHeight: lineHeight.headline,
-            }}
-          >
-            {header.headline}
-          </p>
-        </div>
-        <div
-          style={{
-            textAlign: 'right',
-            flexShrink: 1,
-            paddingTop: spacing.contactPaddingTop,
-            maxWidth: '50%',
-          }}
-        >
-          <p
-            style={{
-              fontSize: font.contact,
-              color: Colors.meta,
-              lineHeight: lineHeight.contact,
-            }}
-          >
-            {header.contactLine1}
-          </p>
-          <p
-            style={{
-              fontSize: font.contact,
-              color: Colors.meta,
-              lineHeight: lineHeight.contact,
-              overflowWrap: 'break-word',
-            }}
-          >
-            {header.socialLinks.map((link, i) => (
-              <span key={link.label}>
-                {i > 0 && ' · '}
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: Colors.meta,
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 3,
-                  }}
-                >
-                  {showSocialIcons && (
-                    <SocialIcon network={link.label.split(':')[0]} />
-                  )}
-                  {link.label}
-                </a>
-              </span>
-            ))}
-          </p>
-        </div>
-      </div>
-      {header.summary.length > 0 && (
-        <div style={{ marginTop: spacing.summaryMarginTop }}>
-          {header.summary.map((s, i) => (
-            <p
-              key={i}
-              className="md-inline"
-              style={{
-                fontSize: font.summary,
-                color: Colors.meta,
-                lineHeight: lineHeight.summary,
-              }}
-              {...inlineMdProps(s)}
-            />
-          ))}
-        </div>
-      )}
-    </header>,
+    <Header
+      key="header"
+      header={header}
+      tokens={tokens}
+      showSocialIcons={showSocialIcons}
+    />,
   )
 
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i]
     if (!section || !section.variant) continue
-    emitSectionBlocks(section, blocks, sectionGap, lang, options)
+    emitSectionBlocks(
+      section,
+      blocks,
+      sectionGap,
+      lang,
+      options,
+      tokens.spacing.sectionGap,
+    )
   }
 
   return (
@@ -243,7 +144,7 @@ function SkillRow({
 }: {
   skill: { id: string; name: string; level: string; keywords: string[] }
 }) {
-  const { font, lineHeight } = useLayoutTokensContext()
+  const { font, lineHeight, colors } = useLayoutTokensContext()
   return (
     <div style={{ display: 'flex', gap: 0, alignItems: 'baseline' }}>
       <div
@@ -259,19 +160,19 @@ function SkillRow({
           style={{
             fontSize: font.skillName,
             fontWeight: 600,
-            color: Colors.entry,
+            color: colors.entry,
           }}
         >
           {skill.name}
         </span>
-        <span style={{ fontSize: font.skillLevel, color: Colors.subtle }}>
+        <span style={{ fontSize: font.skillLevel, color: colors.subtle }}>
           ({skill.level})
         </span>
       </div>
       <p
         style={{
           fontSize: font.skillKeywords,
-          color: Colors.meta,
+          color: colors.meta,
           lineHeight: lineHeight.skillKeywords,
           flex: 1,
         }}
@@ -289,7 +190,7 @@ function CertificateRow({
   cert: { id: string; name: string; issuer: string; date: string }
   lang: string
 }) {
-  const { font } = useLayoutTokensContext()
+  const { font, colors } = useLayoutTokensContext()
   return (
     <div
       style={{
@@ -303,7 +204,7 @@ function CertificateRow({
         style={{
           fontSize: font.certName,
           fontWeight: 500,
-          color: Colors.entry,
+          color: colors.entry,
         }}
       >
         {cert.name}
@@ -311,7 +212,7 @@ function CertificateRow({
       <span
         style={{
           fontSize: font.certMeta,
-          color: Colors.subtle,
+          color: colors.subtle,
           whiteSpace: 'nowrap',
           flexShrink: 0,
         }}
@@ -324,17 +225,9 @@ function CertificateRow({
 
 function emitEntryParts(
   section: Extract<RenderSection, { variant: 'entries' }>,
-  entry: {
-    id: string
-    title: string
-    subtitle: string
-    startDate: string
-    endDate?: string
-    bullets: string[]
-    keywords: string[]
-  },
+  entry: RenderEntry,
+  template: TemplateDefinition,
   blocks: ReactNode[],
-  sectionGap: (base: number) => number,
   lang: string,
   options: {
     isFirst: boolean
@@ -344,7 +237,8 @@ function emitEntryParts(
   },
 ) {
   const subsectionId = `${section.id}-entry-${entry.id}`
-  const gap = sectionGap(section.gap ?? SectionSpacing)
+  const bullets = template.getEntryBullets(entry)
+  const keywordsNode = template.renderEntryKeywords(entry)
 
   if (!options.allowSubsectionSplit) {
     blocks.push(
@@ -353,15 +247,9 @@ function emitEntryParts(
         section.id,
         <>
           {options.isFirst && <SecHead title={section.title} />}
-          <EntryHead
-            title={entry.title}
-            sub={entry.subtitle}
-            start={entry.startDate}
-            end={entry.endDate}
-            lang={lang}
-          />
-          {entry.bullets.length > 0 && <Bullets items={entry.bullets} />}
-          {entry.keywords.length > 0 && <Keywords items={entry.keywords} />}
+          {template.renderEntryHead(entry, lang)}
+          {bullets.length > 0 && <Bullets items={bullets} />}
+          {keywordsNode}
         </>,
         {
           paddingTop: options.paddingTop,
@@ -379,13 +267,7 @@ function emitEntryParts(
       section.id,
       <>
         {options.isFirst && <SecHead title={section.title} />}
-        <EntryHead
-          title={entry.title}
-          sub={entry.subtitle}
-          start={entry.startDate}
-          end={entry.endDate}
-          lang={lang}
-        />
+        {template.renderEntryHead(entry, lang)}
       </>,
       {
         paddingTop: options.paddingTop,
@@ -396,25 +278,23 @@ function emitEntryParts(
     ),
   )
 
-  if (entry.bullets.length > 0) {
+  if (bullets.length > 0) {
     blocks.push(
       subsectionBlock(
         `${subsectionId}-bullets`,
         section.id,
-        <Bullets items={entry.bullets} />,
+        <Bullets items={bullets} />,
         { subsectionId, subsectionPart: 'bullets' },
       ),
     )
   }
 
-  if (entry.keywords.length > 0) {
+  if (keywordsNode) {
     blocks.push(
-      subsectionBlock(
-        `${subsectionId}-keywords`,
-        section.id,
-        <Keywords items={entry.keywords} />,
-        { subsectionId, subsectionPart: 'keywords' },
-      ),
+      subsectionBlock(`${subsectionId}-keywords`, section.id, keywordsNode, {
+        subsectionId,
+        subsectionPart: 'keywords',
+      }),
     )
   }
 }
@@ -500,7 +380,7 @@ function emitAwardParts(
 }
 
 function LangRow({ label, values }: { label: string; values: string[] }) {
-  const { font } = useLayoutTokensContext()
+  const { font, colors } = useLayoutTokensContext()
   return (
     <div style={{ display: 'flex', gap: 0, alignItems: 'baseline' }}>
       <span
@@ -511,12 +391,12 @@ function LangRow({ label, values }: { label: string; values: string[] }) {
           fontWeight: 700,
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
-          color: Colors.meta,
+          color: colors.meta,
         }}
       >
         {label}
       </span>
-      <span style={{ fontSize: font.langValue, color: Colors.body }}>
+      <span style={{ fontSize: font.langValue, color: colors.body }}>
         {values.join(' · ')}
       </span>
     </div>
@@ -529,6 +409,7 @@ function emitSectionBlocks(
   sectionGap: (base: number) => number,
   lang: string,
   layoutOptions: LayoutOptions,
+  entryGap: number,
 ) {
   const leadSpacing = {
     paddingTop: sectionLeadPadding(sectionGap),
@@ -536,6 +417,7 @@ function emitSectionBlocks(
   }
 
   if (section.variant === 'entries') {
+    const template = TEMPLATES[layoutOptions.templateId]
     const entries = section.entries
     if (entries.length === 0) {
       blocks.push(
@@ -549,7 +431,7 @@ function emitSectionBlocks(
       return
     }
 
-    emitEntryParts(section, entries[0], blocks, sectionGap, lang, {
+    emitEntryParts(section, entries[0], template, blocks, lang, {
       isFirst: true,
       paddingTop: leadSpacing.paddingTop,
       sectionStart: true,
@@ -557,9 +439,9 @@ function emitSectionBlocks(
     })
 
     for (let i = 1; i < entries.length; i++) {
-      emitEntryParts(section, entries[i], blocks, sectionGap, lang, {
+      emitEntryParts(section, entries[i], template, blocks, lang, {
         isFirst: false,
-        paddingTop: sectionGap(section.gap ?? SectionSpacing),
+        paddingTop: entryGap,
         sectionStart: false,
         allowSubsectionSplit: layoutOptions.allowSubsectionSplit,
       })

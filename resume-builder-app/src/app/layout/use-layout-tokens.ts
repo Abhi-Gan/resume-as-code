@@ -1,6 +1,10 @@
 import { useMemo } from 'react'
-import { PAPER_SIZES } from '../renderer/constants'
-import { TypographyBaseline } from '../renderer/typography-baseline'
+import {
+  PAPER_SIZES,
+  TEMPLATE_COLORS,
+  type ColorPalette,
+} from '../renderer/constants'
+import { TEMPLATE_TYPOGRAPHY } from '../renderer/typography-baseline'
 import type { LayoutOptions } from './layout-options'
 
 export function scalePx(base: number, scale: number): number {
@@ -13,6 +17,7 @@ export function scaleLine(base: number, scale: number): number {
 
 export interface LayoutTokens {
   options: LayoutOptions
+  colors: ColorPalette
   sectionGap: (base: number) => number
   componentGap: (base: number) => number
   font: {
@@ -45,6 +50,9 @@ export interface LayoutTokens {
     keyword: number
     skillKeywords: number
   }
+  letterSpacing: {
+    sectionHead: string
+  }
   spacing: {
     sectionGap: number
     headlineMarginTop: number
@@ -75,10 +83,11 @@ export function computeLayoutTokens(options: LayoutOptions): LayoutTokens {
   const sectionGap = (base: number) => Math.round(base * options.spacingScale)
   const marginPx = options.pageMarginPx
 
-  const b = TypographyBaseline
+  const b = TEMPLATE_TYPOGRAPHY[options.templateId]
 
   return {
     options,
+    colors: TEMPLATE_COLORS[options.templateId],
     sectionGap,
     componentGap,
     font: {
@@ -110,6 +119,9 @@ export function computeLayoutTokens(options: LayoutOptions): LayoutTokens {
       body: scaleLine(b.lineHeight.body, lineHeightScale),
       keyword: scaleLine(b.lineHeight.keyword, lineHeightScale),
       skillKeywords: scaleLine(b.lineHeight.skillKeywords, lineHeightScale),
+    },
+    letterSpacing: {
+      sectionHead: b.letterSpacing.sectionHead,
     },
     spacing: {
       sectionGap: sectionGap(b.spacing.sectionGap),

@@ -1,3 +1,5 @@
+**Template gate**: if `template = techCompact`, skip this step entirely — do not generate `section-skills.yml`, and drop `"skills"` from the assembled resume's section `order`. This template has no standalone Skills section; the same keyword signal is folded into the first (italicized, tech-stack-list) bullet of each Work/Project entry instead — see `references/section-work.md` / `references/section-projects.md`. Everything below applies only when `template = jake`.
+
 Generate the skills section (descriptive, highlight-oriented) using session context (projects, work experience, certifications, OSS participation, role analysis).
 
 Important requirements:
