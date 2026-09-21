@@ -8,6 +8,9 @@
 import express from 'express'
 import cors from 'cors'
 import puppeteer, { type Browser } from 'puppeteer'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   buildContentDisposition,
   buildExportFilename,
@@ -17,6 +20,12 @@ import { DEFAULT_PAPER_SIZE, PAPER_SIZE_IDS, type PaperSizeId } from '../models'
 
 const PORT = Number(process.env.EXPORT_PORT) || 3001
 const APP_URL = process.env.APP_URL || 'http://localhost:5173'
+
+// data/resumes/ lives at the repo root, three levels up from
+// resume-builder-app/src/export-service/. No __dirname in ESM, so derive it
+// from import.meta.url instead.
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const RESUMES_DIR = path.resolve(__dirname, '../../../data/resumes')
 
 let browser: Browser | null = null
 
@@ -180,6 +189,106 @@ app.post('/api/export', async (req, res) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', browserConnected: browser?.connected ?? false })
+})
+
+/**
+ * Local file bridge for data/resumes/*.yml — lets the browser preview a
+ * resume that's being edited on disk (e.g. in VS Code) without copy/pasting
+ * its YAML into the in-browser editor. Read-only: the app never writes back.
+ */
+
+/** Resolve `name` to an actual file in RESUMES_DIR, or null if it doesn't
+ * exist. Matches against a directory listing rather than joining the path
+ * directly, so a name containing `..` or `/` can never escape RESUMES_DIR. */
+function resolveResumeFile(name: string): string | null {
+  const files = safeListResumeFiles()
+  const filename = files.includes(`${name}.yml`)
+    ? `${name}.yml`
+    : files.includes(name)
+      ? name
+      : null
+  return filename ? path.join(RESUMES_DIR, filename) : null
+}
+
+function safeListResumeFiles(): string[] {
+  try {
+    return fs.readdirSync(RESUMES_DIR).filter((f) => f.endsWith('.yml'))
+  } catch {
+    return []
+  }
+}
+
+app.get('/api/resumes', (_req, res) => {
+  const files = safeListResumeFiles()
+  const entries = files.map((filename) => {
+    const stat = fs.statSync(path.join(RESUMES_DIR, filename))
+    return { name: filename.replace(/\.yml$/, ''), mtimeMs: stat.mtimeMs }
+  })
+  entries.sort((a, b) => b.mtimeMs - a.mtimeMs)
+  res.json(entries)
+})
+
+app.get('/api/resumes/:name', (req, res) => {
+  const filePath = resolveResumeFile(req.params.name)
+  if (!filePath) {
+    res.status(404).json({ error: `Resume file not found: ${req.params.name}` })
+    return
+  }
+  const content = fs.readFileSync(filePath, 'utf-8')
+  const stat = fs.statSync(filePath)
+  res.json({ content, mtimeMs: stat.mtimeMs })
+})
+
+app.get('/api/resumes/:name/watch', (req, res) => {
+  const filePath = resolveResumeFile(req.params.name)
+  if (!filePath) {
+    res.status(404).json({ error: `Resume file not found: ${req.params.name}` })
+    return
+  }
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  })
+  res.write('retry: 2000\n\n')
+
+  const sendUpdate = () => {
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8')
+      const stat = fs.statSync(filePath)
+      res.write(
+        `data: ${JSON.stringify({ content, mtimeMs: stat.mtimeMs })}\n\n`,
+      )
+    } catch (err) {
+      res.write(
+        `data: ${JSON.stringify({ error: err instanceof Error ? err.message : 'read failed' })}\n\n`,
+      )
+    }
+  }
+
+  // Send the current content immediately so the client doesn't need a
+  // separate initial fetch before it starts watching.
+  sendUpdate()
+
+  // Watch the directory rather than the file itself: editors that save
+  // atomically (write a temp file, then rename it over the original) can
+  // silently invalidate a single-file fs.watch handle after the first save.
+  const targetName = path.basename(filePath)
+  let debounceTimer: NodeJS.Timeout | null = null
+  const watcher = fs.watch(RESUMES_DIR, (_eventType, filename) => {
+    if (filename !== targetName) return
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(sendUpdate, 150)
+  })
+
+  const heartbeat = setInterval(() => res.write(':heartbeat\n\n'), 20000)
+
+  req.on('close', () => {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    clearInterval(heartbeat)
+    watcher.close()
+  })
 })
 
 app.listen(PORT, () => {

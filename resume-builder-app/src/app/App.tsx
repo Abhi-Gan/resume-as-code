@@ -1,12 +1,14 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { parse as parseYaml } from 'yaml'
 import { AlertTriangle, CircleX, Info } from 'lucide-react'
 import Editor from '@monaco-editor/react'
 import { ResumeRenderer } from './renderer'
-import { compileLegacy, compileNewSchema, isLegacyFormat } from '../compiler'
+import {
+  compileResumeSource,
+  type DiagnosticItem,
+  type SourceStatus,
+} from '../compiler/compile-source'
 import type { RenderModel } from '../models'
 import { buildExportFilename } from '../export/build-filename'
-import type { ResumeDocument } from '../schema'
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -202,15 +204,6 @@ sections:
         keywords: [mentoring junior engineers, conference speaking, knowledge sharing]
 `
 
-// ── Validation types ─────────────────────────────────────────────────────────
-interface DiagnosticItem {
-  severity: 'error' | 'warning' | 'info'
-  message: string
-  line?: number
-}
-
-type SourceStatus = 'new-schema' | 'legacy-adapted' | 'invalid'
-
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [yamlSource, setYamlSource] = useState(SAMPLE_NEW_SCHEMA)
@@ -225,76 +218,19 @@ export default function App() {
   const [previewZoom, setPreviewZoom] = useState(1.0)
   const [showSocialIcons, setShowSocialIcons] = useState(true)
   const lastValidModel = useRef<RenderModel | null>(null)
-  // Keep last parsed doc so language toggle can re-compile without re-parsing
-  const lastParsedDoc = useRef<unknown>(null)
 
   // Compile YAML → RenderModel
   const compile = useCallback(
     (source: string, forceLang?: 'zh' | 'en' | null): RenderModel | null => {
-      const newDiagnostics: DiagnosticItem[] = []
-
-      try {
-        const parsed = parseYaml(source)
-        if (!parsed || typeof parsed !== 'object') {
-          newDiagnostics.push({
-            severity: 'error',
-            message: 'YAML parsed to empty or non-object value',
-          })
-          setDiagnostics(newDiagnostics)
-          setSourceStatus('invalid')
-          return null
-        }
-
-        lastParsedDoc.current = parsed
-        const effectiveLang = forceLang !== undefined ? forceLang : langOverride
-
-        // Detect format and compile
-        if (isLegacyFormat(parsed)) {
-          const model = compileLegacy(parsed, effectiveLang ?? undefined)
-          setRenderModel(model)
-          lastValidModel.current = model
-          setSourceStatus('legacy-adapted')
-          newDiagnostics.push({
-            severity: 'info',
-            message: 'Legacy yamlresume format detected and adapted',
-          })
-          setDiagnostics(newDiagnostics)
-          return model
-        } else if (
-          parsed.schema &&
-          parsed.document &&
-          parsed.basics &&
-          parsed.sections
-        ) {
-          const model = compileNewSchema(
-            parsed as ResumeDocument,
-            effectiveLang ?? undefined,
-          )
-          setRenderModel(model)
-          lastValidModel.current = model
-          setSourceStatus('new-schema')
-          setDiagnostics(newDiagnostics)
-          return model
-        } else {
-          newDiagnostics.push({
-            severity: 'error',
-            message:
-              'Unknown YAML structure — expected new schema (schema + document + basics + sections) or legacy format (content.basics)',
-          })
-          setSourceStatus('invalid')
-        }
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Unknown parse error'
-        newDiagnostics.push({
-          severity: 'error',
-          message: `YAML syntax error: ${message}`,
-        })
-        setSourceStatus('invalid')
+      const effectiveLang = forceLang !== undefined ? forceLang : langOverride
+      const result = compileResumeSource(source, effectiveLang)
+      setDiagnostics(result.diagnostics)
+      setSourceStatus(result.sourceStatus)
+      if (result.model) {
+        setRenderModel(result.model)
+        lastValidModel.current = result.model
       }
-
-      setDiagnostics(newDiagnostics)
-      return null
+      return result.model
     },
     [langOverride],
   )
