@@ -49,6 +49,12 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
+      // Read-only bridge to data/resumes/*.yml for the file-linked live
+      // preview (/open/:name). SSE stream lives under this same prefix.
+      '/api/resumes': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
     },
   },
 })

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { AdvancedLayoutSheet } from './AdvancedLayoutSheet'
 import { ResumeBuilderLogo } from './ResumeBuilderLogo'
+import { ResumeFilePicker } from './ResumeFilePicker'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Separator } from './ui/separator'
@@ -97,6 +98,10 @@ export function AppToolbar({
           Resume Builder
         </span>
       </div>
+
+      <Separator orientation="vertical" className="h-5" />
+
+      <ResumeFilePicker />
 
       <Separator orientation="vertical" className="h-5" />
 
