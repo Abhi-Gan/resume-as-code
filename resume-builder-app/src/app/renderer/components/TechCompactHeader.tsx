@@ -14,8 +14,11 @@ export function TechCompactHeader({
   const { font, lineHeight, spacing, colors } = tokens
 
   const contactParts: ReactNode[] = []
-  if (header.contactLine1) {
-    contactParts.push(<span key="contact-main">{header.contactLine1}</span>)
+  if (header.phone) {
+    contactParts.push(<span key="phone">{header.phone}</span>)
+  }
+  if (header.email) {
+    contactParts.push(<span key="email">{header.email}</span>)
   }
   for (const link of header.socialLinks) {
     contactParts.push(

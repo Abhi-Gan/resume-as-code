@@ -266,6 +266,8 @@ export function compileLegacy(
       headline: '',
       contactLine1: contactParts1.join(' · '),
       contactLine2: '',
+      phone: basics.phone ?? '',
+      email: basics.email ?? '',
       location: '',
       summary: parseSummaryBullets(basics.summary),
       socialLinks,
