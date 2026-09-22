@@ -262,6 +262,8 @@ export function compileNewSchema(
       headline: basics.headline ?? '',
       contactLine1: contactParts1.join(' · '),
       contactLine2: '',
+      phone: basics.phone ?? '',
+      email: basics.email ?? '',
       location: basics.location ?? '',
       summary: parseSummary(basics.summary),
       socialLinks,

@@ -16,6 +16,9 @@ export interface RenderHeader {
   headline: string
   contactLine1: string
   contactLine2: string
+  /** Phone, separate from contactLine1 so templates that use a uniform separator (e.g. techCompact) don't inherit contactLine1's baked-in " · " join. */
+  phone: string
+  email: string
   /** Candidate location (e.g. "Palo Alto, CA"), empty string if unset. */
   location: string
   summary: string[]
